@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding:30px; background:#f5f7fa; }
+    .loginBox, .panel { max-width:500px; margin:auto; background:#fff; padding:20px; border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.1); }
+    h2 { text-align:center; }
+    input { width:100%; padding:10px; margin:10px 0; border:1px solid #ccc; border-radius:8px; }
+    button { padding:10px 15px; border:none; border-radius:6px; cursor:pointer; margin-top:5px; }
+    .approve { background:#4CAF50; color:white; }
+    .reject { background:#e74c3c; color:white; }
+    table { width:100%; border-collapse: collapse; margin-top:20px; background:#fff; }
+    th, td { padding:10px; border:1px solid #ddd; text-align:center; }
+    th { background:#4CAF50; color:white; }
+  </style>
+</head>
+<body>
+  <!-- Admin Login -->
+  <div class="loginBox" id="loginBox">
+    <h2>Admin Login</h2>
+    <input id="adminPass" type="password" placeholder="Enter Admin Password">
+    <button onclick="checkPassword()">Login</button>
+    <p id="loginMsg" style="color:red;"></p>
+  </div>
+
+  <!-- Admin Panel -->
+  <div class="panel" id="adminPanel" style="display:none;">
+    <h2>User Approval</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="userTable"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // ⚠️ Replace with your Supabase details
+    const SUPABASE_URL = "https://svogxyuxvkcyxifexwvd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2b2d4eXV4dmtjeXhpZmV4d3ZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NTk2NDYsImV4cCI6MjA3MzMzNTY0Nn0.I0x0xtKR9yaUOqcZ_TDDclVazevhTrBdy4k0sCXEwLA";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // ✅ Admin password (change this!)
+    const ADMIN_PASSWORD = "MySecret123";
+
+    function checkPassword() {
+      const input = document.getElementById("adminPass").value;
+      if (input === ADMIN_PASSWORD) {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("adminPanel").style.display = "block";
+        loadUsers();
+      } else {
+        document.getElementById("loginMsg").innerText = "Wrong password!";
+      }
+    }
+
+    async function loadUsers() {
+      let { data: users, error } = await client
+        .from("users_profile")
+        .select("id, email, status");
+
+      if (error) {
+        alert("Error loading users: " + error.message);
+        return;
+      }
+
+      const table = document.getElementById("userTable");
+      table.innerHTML = "";
+
+      users.forEach(u => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${u.email}</td>
+          <td>${u.status}</td>
+          <td>
+            <button class="approve" onclick="approveUser('${u.id}')">Approve</button>
+            <button class="reject" onclick="rejectUser('${u.id}')">Reject</button>
+          </td>
+        `;
+        table.appendChild(row);
+      });
+    }
+
+    async function approveUser(id) {
+      await client.from("users_profile").update({ status: "active" }).eq("id", id);
+      loadUsers();
+    }
+
+    async function rejectUser(id) {
+      await client.from("users_profile").update({ status: "rejected" }).eq("id", id);
+      loadUsers();
+    }
+  </script>
+</body>
+</html>
