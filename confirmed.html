@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Confirmed</title>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #43cea2, #185a9d);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+    }
+    h1 { font-size: 30px; margin-bottom: 15px; }
+    p { font-size: 18px; margin-bottom: 30px; }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+    }
+    button:hover { background: #eee; }
+  </style>
+</head>
+<body>
+  <h1 id="title">Checking status...</h1>
+  <p id="message"></p>
+  <button id="loginBtn" style="display:none;" onclick="window.location.href='login.html'">Go to Login</button>
+
+  <script>
+    // 🔑 Supabase setup
+   const SUPABASE_URL = "https://svogxyuxvkcyxifexwvd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN2b2d4eXV4dmtjeXhpZmV4d3ZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NTk2NDYsImV4cCI6MjA3MzMzNTY0Nn0.I0x0xtKR9yaUOqcZ_TDDclVazevhTrBdy4k0sCXEwLA";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function checkUserStatus() {
+      const { data: user, error } = await supabase.auth.getUser();
+      if (error || !user) {
+        document.getElementById("title").innerText = "Error!";
+        document.getElementById("message").innerText = "Cannot fetch user info.";
+        return;
+      }
+
+      const email = user.user.email;
+
+      // Check status from users_profile table
+      const { data: profile, error: profileError } = await supabase
+        .from("users_profile")
+        .select("status")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        document.getElementById("title").innerText = "Error!";
+        document.getElementById("message").innerText = "Cannot find your profile.";
+        return;
+      }
+
+      if (profile.status === "active") {
+        document.getElementById("title").innerText = "✅ Email Confirmed";
+        document.getElementById("message").innerText = "Your account is approved by admin. You can login now.";
+        document.getElementById("loginBtn").style.display = "inline-block";
+      } else {
+        document.getElementById("title").innerText = "⏳ Email Confirmed";
+        document.getElementById("message").innerText = "Your email is confirmed, but admin approval is still pending. Please wait.";
+      }
+    }
+
+    checkUserStatus();
+  </script>
+</body>
+</html>
